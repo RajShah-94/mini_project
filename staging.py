@@ -1,4 +1,4 @@
-print_couriers()
+print_orders()
 selection = int(input("Enter Number Here: "))
 connection = pymysql.connect(
     host="localhost",
@@ -9,9 +9,13 @@ connection = pymysql.connect(
 
 cursor = connection.cursor()
 
+print_status()
+status = int(input("Enter Status: "))
+
 cursor.execute(f"""
-    DELETE FROM couriers
-    WHERE courier_id = {selection}
+    UPDATE orders
+    SET status = '{status}'
+    WHERE order_id = {selection}
 """)
 
 connection.commit()

@@ -10,6 +10,16 @@ def import_orders():
             order_list.append(row)
 
 
+def goodbye_exit():
+    print("\nExit Options", "Choose option:", "[0] Return to Main Menu", "[1] Exit", sep="\n")
+    options = int(input("Enter number here: "))
+    if options == 0:
+        main_menu()
+    elif options == 1:
+        print("Goodbye")
+        exit()
+
+
 def main_menu():
     print("\nMain menu", "Choose option:", "[0] Exit", "[1] Products", "[2] Couriers", "[3] Orders", sep="\n")
     options = int(input("Enter number here: "))
@@ -26,20 +36,10 @@ def main_menu():
         main_menu()
 
 
-def goodbye_exit():
-    print("\nExit Options", "Choose option:", "[0] Return to Main Menu", "[1] Exit", sep="\n")
-    options = int(input("Enter number here: "))
-    if options == 0:
-        main_menu()
-    elif options == 1:
-        print("Goodbye")
-        exit()
-
-
 def product_menu():
-    print("\nProduct Menu", "Choose option:", "[0] Return to Main Menu", "[1] Print Products", "[2] Add Product",
+    print("\nProduct Menu", "Choose Option:", "[0] Return To Main Menu", "[1] Print Products", "[2] Add Product",
           "[3] Update Product", "[4] Delete Product", sep="\n")
-    options = int(input("Enter number here: "))
+    options = int(input("Enter Number Here: "))
     if options == 0:
         main_menu()
     elif options == 1:
@@ -55,31 +55,8 @@ def product_menu():
         delete_product()
         product_menu()
     else:
-        print("\nEntry Error: Please try again")
+        print("\nEntry Error: Please Try Again")
         product_menu()
-
-
-def courier_menu():
-    print("\nCourier Menu", "Choose option:", "[0] Return to Main Menu", "[1] Print Couriers", "[2] Add Courier",
-          "[3] Update Courier", "[4] Delete Courier", sep="\n")
-    options = int(input("Enter number here: "))
-    if options == 0:
-        main_menu()
-    elif options == 1:
-        print_couriers()
-        courier_menu()
-    elif options == 2:
-        add_courier()
-        courier_menu()
-    elif options == 3:
-        update_courier()
-        courier_menu()
-    elif options == 4:
-        delete_courier()
-        courier_menu()
-    else:
-        print("\nEntry Error: Please try again")
-        courier_menu()
 
 
 def print_products():
@@ -177,6 +154,29 @@ def delete_product():
 
     connection.commit()
     connection.close()
+
+
+def courier_menu():
+    print("\nCourier Menu", "Choose Option:", "[0] Return To Main Menu", "[1] Print Couriers", "[2] Add Courier",
+          "[3] Update Courier", "[4] Delete Courier", sep="\n")
+    options = int(input("Enter Number Here: "))
+    if options == 0:
+        main_menu()
+    elif options == 1:
+        print_couriers()
+        courier_menu()
+    elif options == 2:
+        add_courier()
+        courier_menu()
+    elif options == 3:
+        update_courier()
+        courier_menu()
+    elif options == 4:
+        delete_courier()
+        courier_menu()
+    else:
+        print("\nEntry Error: Please Try Again")
+        courier_menu()
 
 
 def print_couriers():
@@ -277,76 +277,188 @@ def delete_courier():
 
 def order_menu():
     print("\nOrder Menu", "Choose option:", "[0] Return to Main Menu", "[1] Print Orders", "[2] Add Order",
-          "[3] Update Order", "[4] Delete Order", sep="\n")
+          "[3] Update Customer Details", "[4] Update Order Status", "[5] Delete Order", sep="\n")
     options = int(input("Enter number here: "))
     if options == 0:
         main_menu()
     elif options == 1:
-        for i in order_list:
-            print(f"Customer: {i['customer_name']}, Order Status: {i['status']}")
+        print_orders()
         order_menu()
     elif options == 2:
-        add_to_orders(order_list)
+        add_order()
         order_menu()
     elif options == 3:
-        selected = choose_order()
-        update_orders(selected)
+        update_order("customer")
         order_menu()
     elif options == 4:
-        selected = choose_order()
-        order_list.pop(selected)
+        update_order("status")
+        order_menu()
+    elif options == 5:
+        delete_order()
         order_menu()
     else:
         print("\nEntry Error: Please try again")
         order_menu()
 
 
-def add_to_orders(list_name):
-    print("Enter new order details")
-    name = str(input("Enter Name: "))
+def print_orders():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM orders")
+    results = cursor.fetchall()
+
+    for record in results:
+        id = record[0]
+        name = record[1]
+        address = record[2]
+        phone = record[3]
+        courier = record[4]
+        status = record[5]
+        basket = record[6]
+        print(f"[{id}] Name: {name}, Courier:{courier}, Status:{status}")
+
+    connection.close()
+
+
+def add_order():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    name = str(input("Enter Customer Name: "))
     address = str(input("Enter Address: "))
-    phone = str(input("Enter Phone No: "))
-    courier = int(input("Courier No: "))
-    status = "Preparing"
-    items = ""
-    new_order = {"customer_name": name, "customer_address": address, "customer_phone": phone, "courier": courier,
-                 "status": status, "items": items}
-    list_name.append(new_order)
+    phone = int(input("Enter Phone Number: "))
+    print_couriers()
+    courier = int(input("Enter Courier: "))
+    print_status()
+    status = int(input("Enter Status: "))
+    basket = 1
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""INSERT INTO orders (order_id, customer_name, customer_address, customer_phone, 
+        courier_id, status_id, basket_id) 
+        VALUES (NULL, '{name}', '{address}', '{phone}', '{courier}', '{status}', '{basket}')
+    """)
+
+    connection.commit()
+    connection.close()
 
 
-def choose_order():
-    j = 0
-    for i in order_list:
-        print(f"[{j}] {i['customer_name']}")
-        j += 1
-    selection = int(input("Enter Number Here: "))
-    return order_list[selection]
+def update_order(fields):
+    if fields == "customer":
+        print_orders()
+        selection = int(input("Enter Number Here: "))
+        connection = pymysql.connect(
+            host="localhost",
+            user="root",
+            password="password",
+            database="mp_database"
+        )
 
+        cursor = connection.cursor()
 
-def update_orders(order_dict):
-    print("Select field to update", "[0] Return to previous menu", f"[1] Name: {order_dict['customer_name']}",
-          f"[2] Address: {order_dict['customer_address']}", f"[3] Phone Number: {order_dict['customer_phone']}",
-          f"[4] Order Status: {order_dict['status']}", sep="\n")
-    selection = int(input("Enter Field Number: "))
-    if selection == 0:
-        # order_menu()
-        return
-    elif selection == 1:
         new_name = str(input("Enter New Name: "))
-        if new_name != "":
-            order_dict['customer_name'] = new_name
-    elif selection == 2:
         new_address = str(input("Enter New Address: "))
+        new_phone = input("Enter New Phone Number: ")
+
+        if new_name != "":
+            cursor.execute(f"""
+                UPDATE orders
+                SET customer_name = '{new_name}'
+                WHERE order_id = {selection}
+            """)
+
         if new_address != "":
-            order_dict['customer_address'] = new_address
-    elif selection == 3:
-        new_phone = str(input("Enter New Phone Number: "))
+            cursor.execute(f"""
+                UPDATE orders
+                SET customer_address = '{new_name}'
+                WHERE order_id = {selection}
+            """)
+
         if new_phone != "":
-            order_dict['customer_phone'] = new_phone
-    elif selection == 4:
-        new_status = str(input("Enter New Order Status: "))
-        if new_status != "":
-            order_dict['status'] = new_status
+            cursor.execute(f"""
+                UPDATE orders
+                SET customer_phone = {new_phone}
+                WHERE order_id = {selection}
+            """)
+
+        connection.commit()
+        connection.close()
+
+    elif fields == "status":
+        print_orders()
+        selection = int(input("Enter Number Here: "))
+        connection = pymysql.connect(
+            host="localhost",
+            user="root",
+            password="password",
+            database="mp_database"
+        )
+
+        cursor = connection.cursor()
+
+        print_status()
+        status = int(input("Enter Status: "))
+
+        cursor.execute(f"""
+            UPDATE orders
+            SET status_id = {status}
+            WHERE order_id = {selection}
+        """)
+
+        connection.commit()
+        connection.close()
+
+
+def delete_order():
+    print_orders()
+    selection = int(input("Enter Number Here: "))
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""
+        DELETE FROM orders
+        WHERE order_id = {selection}
+    """)
+
+    connection.commit()
+    connection.close()
+
+
+def print_status():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM status")
+    results = cursor.fetchall()
+
+    for record in results:
+        id = record[0]
+        status = record[1]
+        print(f"[{id}] {status}")
+
+    connection.close()
 
 
 main_menu()
