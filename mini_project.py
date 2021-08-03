@@ -1,17 +1,6 @@
 import csv
-
-
-def import_products():
-    with open("products.csv", "r") as file:
-        csv_file = csv.DictReader(file)
-        for row in csv_file:
-            products_list.append(row)
-
-
-def import_couriers():
-    with open("couriers.txt", "r") as file_couriers:
-        for i in file_couriers:
-            couriers_list.append(i.strip("\n"))
+import pymysql
+import os
 
 
 def import_orders():
@@ -22,10 +11,10 @@ def import_orders():
 
 
 def main_menu():
-    print("\nMain menu", "Choose option:", "[0] Save and Exit", "[1] Products", "[2] Couriers", "[3] Orders", sep="\n")
+    print("\nMain menu", "Choose option:", "[0] Exit", "[1] Products", "[2] Couriers", "[3] Orders", sep="\n")
     options = int(input("Enter number here: "))
     if options == 0:
-        save_exit()
+        goodbye_exit()
     elif options == 1:
         product_menu()
     elif options == 2:
@@ -37,63 +26,14 @@ def main_menu():
         main_menu()
 
 
-def save_exit():
-    print("\nSave and Exit", "Choose option:", "[0] Return to Main Menu", "[1] Save and Exit", "[2] Save",
-          "[3] Exit without Saving", sep="\n")
+def goodbye_exit():
+    print("\nExit Options", "Choose option:", "[0] Return to Main Menu", "[1] Exit", sep="\n")
     options = int(input("Enter number here: "))
     if options == 0:
         main_menu()
-    if options == 1:
-        with open("products.csv", "w") as products_file:
-            writer = csv.DictWriter(products_file, fieldnames=products_fieldnames)
-            writer.writeheader()
-            for row in products_file:
-                writer.writerow(row)
-        with open("couriers.csv", "w") as couriers_file:
-            writer = csv.DictWriter(couriers_file, fieldnames=couriers_fieldnames)
-            writer.writeheader()
-            for row in couriers_file:
-                writer.writerow(row)
-        with open("orders.csv", "w") as orders_file:
-            writer = csv.DictWriter(orders_file, fieldnames=orders_fieldnames)
-            writer.writeheader()
-            for row in orders_list:
-                writer.writerow(row)
-        print("\nSaved! Goodbye")
+    elif options == 1:
+        print("Goodbye")
         exit()
-        main_menu()
-    elif options == 2:
-        with open("products.csv", "w") as products_file:
-            writer = csv.DictWriter(products_file, fieldnames=products_fieldnames)
-            writer.writeheader()
-            for row in products_file:
-                writer.writerow(row)
-        with open("couriers.csv", "w") as couriers_file:
-            writer = csv.DictWriter(couriers_file, fieldnames=couriers_fieldnames)
-            writer.writeheader()
-            for row in couriers_file:
-                writer.writerow(row)
-        with open("orders.csv", "w") as orders_file:
-            writer = csv.DictWriter(orders_file, fieldnames=orders_fieldnames)
-            writer.writeheader()
-            for row in orders_list:
-                writer.writerow(row)
-        print("\nSaved!")
-        main_menu()
-    elif options == 3:
-        print("Are you sure? All changes from this session will be lost!")
-        confirmation_dialogue = str(input("[Y] for yes, [N] for no: "))
-        if confirmation_dialogue == "Y" or confirmation_dialogue == "y":
-            print("Goodbye")
-            exit()
-        elif confirmation_dialogue == "N" or confirmation_dialogue == "n":
-            main_menu()
-        else:
-            print("\nEntry Error: Returning to Product Menu")
-            main_menu()
-    else:
-        print("\nEntry Error: Returning to Product Menu")
-        main_menu()
 
 
 def product_menu():
@@ -103,17 +43,16 @@ def product_menu():
     if options == 0:
         main_menu()
     elif options == 1:
-        for i in products_list:
-            print(f"{i['name']}: £{i['price']}")
+        print_products()
         product_menu()
     elif options == 2:
-        add_to_list(products, "product")
+        add_product()
         product_menu()
     elif options == 3:
-        update_list(products, "product")
+        update_product()
         product_menu()
     elif options == 4:
-        delete_from_list(products, "product")
+        delete_product()
         product_menu()
     else:
         print("\nEntry Error: Please try again")
@@ -127,21 +66,213 @@ def courier_menu():
     if options == 0:
         main_menu()
     elif options == 1:
-        for i in couriers_list:
-            print(f"{i['name']}: £{i['phone']}")
+        print_couriers()
         courier_menu()
     elif options == 2:
-        add_to_list(couriers, "courier")
+        add_courier()
         courier_menu()
     elif options == 3:
-        update_list(couriers, "courier")
+        update_courier()
         courier_menu()
     elif options == 4:
-        delete_from_list(couriers, "courier")
+        delete_courier()
         courier_menu()
     else:
         print("\nEntry Error: Please try again")
         courier_menu()
+
+
+def print_products():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM products")
+    results = cursor.fetchall()
+
+    for record in results:
+        id = record[0]
+        name = record[1]
+        price = record[2]
+        print(f"[{id}] {name}: £{price}")
+
+    connection.close()
+
+
+def add_product():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    name = str(input("Enter Product Name: "))
+    price = float(input("Enter Price: "))
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""INSERT INTO products (product_id, product_name, price) 
+        VALUES (NULL, '{name}', '{price}')
+    """)
+
+    connection.commit()
+    connection.close()
+
+
+def update_product():
+    print_products()
+    selection = int(input("Enter Number Here: "))
+
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+
+    new_name = str(input("Enter New Product Name: "))
+    new_price = input("Enter New Price: ")
+
+    if new_name != "":
+        cursor.execute(f"""
+            UPDATE products
+            SET product_name = '{new_name}'
+            WHERE product_id = {selection}
+        """)
+
+    if new_price != "":
+        cursor.execute(f"""
+            UPDATE products
+            SET price = {new_price}
+            WHERE product_id = {selection}
+        """)
+
+    connection.commit()
+    connection.close()
+
+
+def delete_product():
+    print_products()
+    selection = int(input("Enter Number Here: "))
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""
+            DELETE FROM products
+            WHERE product_id = {selection}
+        """)
+
+    connection.commit()
+    connection.close()
+
+
+def print_couriers():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM couriers")
+    results = cursor.fetchall()
+
+    for record in results:
+        id = record[0]
+        name = record[1]
+        phone = record[2]
+        print(f"[{id}] {name}, {phone}")
+
+    connection.close()
+
+
+def add_courier():
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    name = str(input("Enter Courier Name: "))
+    phone = int(input("Enter Phone Number: "))
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""INSERT INTO couriers (courier_id, courier_name, courier_phone) 
+        VALUES (NULL, '{name}', '{phone}')
+    """)
+
+    connection.commit()
+    connection.close()
+
+
+def update_courier():
+    print_couriers()
+    selection = int(input("Enter Number Here: "))
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+
+    new_name = str(input("Enter New Courier Name: "))
+    new_phone = input("Enter New Phone Number: ")
+
+    if new_name != "":
+        cursor.execute(f"""
+            UPDATE couriers
+            SET courier_name = '{new_name}'
+            WHERE courier_id = {selection}
+        """)
+
+    if new_phone != "":
+        cursor.execute(f"""
+            UPDATE couriers
+            SET courier_phone = {new_phone}
+            WHERE courier_id = {selection}
+        """)
+
+    connection.commit()
+    connection.close()
+
+
+def delete_courier():
+    print_couriers()
+    selection = int(input("Enter Number Here: "))
+    connection = pymysql.connect(
+        host="localhost",
+        user="root",
+        password="password",
+        database="mp_database"
+    )
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""
+        DELETE FROM couriers
+        WHERE courier_id = {selection}
+    """)
+
+    connection.commit()
+    connection.close()
 
 
 def order_menu():
@@ -168,55 +299,6 @@ def order_menu():
     else:
         print("\nEntry Error: Please try again")
         order_menu()
-
-
-def add_to_list(list, name):  # list is imported list[], name is list name
-    new_item = str(input(f"Enter new {name}: "))
-    list.append(new_item)
-    return list
-
-
-def update_list(list, name):  # list is imported list[], name is list name
-    print(f"\nChose {name} to update:")
-    print(f"[0] Return to {name.capitalize()} Menu")
-    for item in list:
-        print(f"[{list.index(item) + 1}] {item}")
-    options = int(input("Enter number here: "))
-    if options == 0:
-        return list
-    elif (options >= 0) and (options <= len(list)):
-        print(f"You have chosen: {list[options - 1]}")
-        updated_item = str(input(f"Enter updated {name}: "))
-        list[options - 1] = updated_item
-        return list
-    else:
-        print("\nEntry Error: Please try again")
-        return list
-
-
-def delete_from_list(list, name):  # list is imported list[], name is list name
-    print(f"\nChose {name} to delete:")
-    print(f"[0] Return to {name.capitalize()} Menu")
-    for item in list:
-        print(f"[{list.index(item) + 1}] {item}")
-    options = int(input("Enter number here: "))
-    if options == 0:
-        return list
-    elif (options >= 0) and options <= len(list):
-        print(f"You have chosen: {list[options - 1]}. Are you sure you want to continue?")
-        confirmation_dialogue = str(input("[Y] for yes, [N] for no: "))
-        if confirmation_dialogue == "Y" or confirmation_dialogue == "y":
-            print(f"You have deleted {list[options - 1]}")
-            list.remove(list[options - 1])
-            return list
-        elif confirmation_dialogue == "N" or confirmation_dialogue == "n":
-            return list
-        else:
-            print(f"\nEntry Error: Returning to {name.capitalize()} Menu")
-            return list
-    else:
-        print("\nEntry Error: Please try again")
-        return list
 
 
 def add_to_orders(list_name):
@@ -267,13 +349,4 @@ def update_orders(order_dict):
             order_dict['status'] = new_status
 
 
-products_list = []
-couriers_list = []
-order_list = []
-products_fieldnames = ["name", "price"]
-couriers_fieldnames = ["name", "phone"]
-orders_fieldnames = ["customer_name", "customer_address", "customer_phone", "courier", "status", "items"]
-import_products()
-import_couriers()
-import_orders()
 main_menu()
