@@ -316,11 +316,11 @@ def print_orders():
     for record in results:
         id = record[0]
         name = record[1]
-        address = record[2]
-        phone = record[3]
+        # address = record[2]
+        # phone = record[3]
         courier = record[4]
         status = record[5]
-        basket = record[6]
+        # basket = record[6]
         print(f"[{id}] Name: {name}, Courier:{courier}, Status:{status}")
 
     connection.close()
